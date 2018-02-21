@@ -1,3 +1,3 @@
-# Day04
+# Revamped UI
 
-Working with color reduction
+Major rework of the UI
