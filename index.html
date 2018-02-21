@@ -1,0 +1,180 @@
+<!doctype html>
+<html>
+
+    <head>
+        <title>Ichabod</title>
+        <link href="https://fonts.googleapis.com/css?family=Lora|Roboto" rel="stylesheet">
+        <link href="https://use.fontawesome.com/releases/v5.0.6/css/all.css" rel="stylesheet">
+
+        <style>
+            [v-cloak] {
+                display: none
+            }
+
+            img {
+                margin-top: 5rem;
+
+            }
+
+            .mainImage {
+                object-fit: contain;
+                object-position: center;
+                height: 12rem;
+                width: 18rem;
+                margin-top: 0px;
+            }
+
+            body{
+                //font-family:'Roboto', sans-serif;
+                font-family: 'Lora', serif;
+            }
+
+            th{
+                font-weight: normal;
+            }
+            
+            h2{
+                font-weight:normal;
+                letter-spacing: .15rem;
+            }
+
+
+
+        </style>
+    </head>
+
+    <body onresize="app.resize(event)">
+        <div id="app" v-cloak>
+            <div style="text-align:center;margin-top:3rem;margin-bottom:3rem;">
+                <h2>Ichabod: Java image processing in your browser</h2>
+            </div>
+            <br>
+            <div v-show="!editing" >
+                <div style="text-align:center">&nbsp;
+                    <div v-for="img in baseImages" style="display:inline-block;">
+                        <img v-bind:src="img" class="mainImage" @click="edit(img)">
+                    </div>
+                </div>
+
+                <br>
+            </div>
+            <div v-show="editing" style="text-align:center" id="editor" style="width:100%">
+                <!--<button @click="doneEditing()"><i class="fas fa-long-arrow-alt-left"></i></button>-->
+                <table style="margin-left:auto; margin-right:auto;">
+                    <tr>
+                        <th>Original</th>
+                        <th v-for="command in baseCommands">{{command}}
+                            <input type="text" v-if="command=='reduceColor'" v-model='reduceColorMaxColors' size='5'></input>
+                        </th>
+                    </tr>
+                    <tr v-for="img in baseImages">
+                        <td>
+                            <img v-bind:src="img" class="mainImage">
+                        </td>
+                        <td v-for="command in baseCommands">
+                    <transition name="fade" mode="out-in">
+                        <img :src="getImage(img,command)" :key="reduceColorMaxColors" class="mainImage">
+                    </transition>
+                    </td>
+                    </tr>
+                </table>
+
+            </div>
+
+
+
+        </div>
+
+        <script src='https://code.jquery.com/jquery-3.2.1.min.js'></script>
+        <script src='https://code.jquery.com/ui/1.12.1/jquery-ui.js'></script>
+        <script src='https://unpkg.com/vue'></script>
+        <script src='https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js'></script>
+
+        <script>
+
+            var app = new Vue({
+            el: '#app',
+            data: {
+            editing: true,
+            currentImage: "",
+            imageData: "",
+            image: {},
+            imageScale: 1,
+            mouseState: false,
+            lastMouse: { x: 0, y: 0 },
+            imageOffset: { x: 0, y: 0 },
+
+            baseImages: [],
+            baseCommands: [],
+            reduceColorMaxColors: 8,
+            },
+            mounted() {
+            this.getAvailableFiles();
+            this.getAvailableCommands();
+            },
+            methods: {
+            getAvailableFiles() {
+            $.ajax({ url: "getFileList" }).done(function (result) {
+            console.log(result);
+            app.baseImages = result.split("|");
+
+            _.remove(app.baseImages, i => !i);
+
+
+            }).fail(function (result1, result2) {
+            console.log(result1 + "-" + result2);
+            })
+            },
+            getAvailableCommands() {
+            $.ajax({ url: "getCommandList" }).done(function (result) {
+            console.log(result);
+            app.baseCommands = result.split("|");
+
+            _.remove(app.baseCommands, i => !i);
+
+
+            }).fail(function (result1, result2) {
+            console.log(result1 + "-" + result2);
+            })
+            },
+            edit(img) {
+            console.log("editting " + img);
+            this.editing = true;
+            this.currentImage = img;
+
+            },
+            doneEditing() {
+            this.editing = false;
+            },                
+            doCommand(command) {
+            $.ajax({ url: "process" + "?image=." + this.currentImage + "&command=" + command }).done(function (result) {
+            console.log(result);
+            app.edit(result);
+            _.delay(app.renderCanvas, 100);
+
+
+
+            }).fail(function (result1, result2) {
+            console.log(result1 + "-" + result2);
+            })
+            },
+            getImage(img,command)
+            {
+            let toReturn =  "static?image=." + img + "&command=" + command;
+            if(command == "reduceColor")
+            {
+            toReturn += "&maxColors=" + this.reduceColorMaxColors;
+            }
+            return toReturn;
+            }
+            }
+            });
+
+
+        </script>
+
+
+
+    </body>
+
+</html>
